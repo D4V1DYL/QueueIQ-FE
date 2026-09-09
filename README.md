@@ -1,29 +1,33 @@
-﻿# QueueIQ
+﻿# QueueIQ — AI-Powered Smart Checkout Queue System
 
-Frontend demo dengan landing page animasi dan dashboard antrean request belanja.
+English-language frontend demonstration of overhead basket analysis, basket-aware checkout estimates, and green/amber/red lane guidance.
 
-## Menjalankan
+## Run
 
-Gunakan Node.js 22.13 atau lebih baru.
+Node.js 22.13 or newer is required.
 
 ```sh
 npm install
 npm run dev
 npm run build
-node --experimental-strip-types tests/queue.test.ts
+node --experimental-strip-types tests/checkout.test.ts
 ```
 
-- `/`: landing page, animasi dengan tombol jeda dan dukungan reduced motion.
-- `/dashboard`: membuat request, filter/pencarian, pagination, detail, proses, selesai, batalkan, ekspor CSV.
-- Data contoh dibuat sekali, kemudian tersimpan di localStorage dengan kunci `queueiq-demo-v1`.
-- Tidak ada autentikasi aplikasi, pembayaran, pemesanan eksternal, atau sinkronisasi server. Semua perubahan adalah simulasi pada browser yang sama.
+- `/`: animated landing page with a paused/playable process diagram, lane comparison, and demo entry.
+- `/dashboard`: live local simulation, basket composition map, per-lane queues, fastest-lane recommendations, add-shopper form, run/pause, advance time, lane open/close, reset and JSON export.
 
-## Integrasi backend berikutnya
+## What works today
 
-Model domain dan validasi berada di `lib/queue.ts`. Dashboard memakai `commit()` untuk menyimpan hasil aksi domain ke localStorage. Ganti lapisan baca/simpan tersebut dengan adapter API, pertahankan validasi pada server, gunakan ID dari server, dan terapkan transaksi/concurrency control.
+The simulation persists to `localStorage` under `queueiq-checkout-v2`. Each basket has packaged, produce, and bulky item counts. A demo service-time formula assigns 4, 8, and 10 seconds respectively plus 20 seconds for payment, divided by cashier speed. A lane's wait is the sum of remaining service times ahead. Green is at most 120 seconds, amber at most 240 seconds, red above 240 seconds. Closed lanes are excluded. The simulation advances 15 seconds every 3 real seconds when running.
 
-Kontrak yang disarankan (belum diimplementasikan): `GET /api/requests`, `POST /api/requests`, `PATCH /api/requests/:id/status`, dan `GET /api/activity`. Anggaran dalam rupiah. Status: Menunggu, Diproses, Selesai, Dibatalkan. Status terminal tidak bisa diproses kembali.
+Estimates represent time until a new shopper reaches checkout, not their own checkout completion. Empty lanes may be opened and closed. Occupied lanes cannot close. Changes persist only in this browser; use one active simulation tab at a time.
 
-## Validasi
+## Integration boundary
 
-Tes domain memeriksa pembuatan request, validasi masukan, prioritas antrean, transisi status, pembatalan, serialisasi penyimpanan, dan penolakan data rusak. Browser visual/interaction QA belum dilakukan. WebMCP memakai feature detection; belum diverifikasi dalam runtime WebMCP yang mendukungnya.
+No real camera, trained CV model, network API, or physical traffic lights are connected. The basket map is a schematic of simulated detections, not video or actual inference. Predictive accuracy has not been measured. The seed showcases why three shoppers with small baskets can be faster than two with large baskets.
+
+`lib/checkout.ts` owns the pure simulation model. Replace dashboard initialization and `commit()` storage with an HTTP/WebSocket adapter when the backend exists. Suggested contracts (not implemented): `GET /api/lanes`, `GET /api/detections`, `GET /api/recommendation`, a `lane_updated` event stream, and an authenticated operator API for lane availability. Backend integrations should publish item categories/counts and confidence, compute calibrated service estimates, and drive hardware signal states. The camera pipeline should not rely on identifying shoppers.
+
+## Validation
+
+Domain tests cover workload estimates, recommendation changes, exact traffic-light thresholds, invalid baskets, closed lanes, checkout completion, and persistence round trips. Build and TypeScript checks are used. Browser visual/interaction QA has not been run. Optional WebMCP read-only recommendation support is feature-detected and has not been verified in a supported browser context.

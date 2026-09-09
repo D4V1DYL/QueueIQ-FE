@@ -1,8 +1,0 @@
-﻿import assert from 'node:assert/strict';
-import {seed,createRequest,transition,nextRequest,parseData} from '../lib/queue.ts';
-const initial=seed();assert.equal(initial.requests.length,12);assert.equal(nextRequest(initial)?.id,'QI-1048');
-const draft={title:' Test request ',owner:' Test User ',category:'Elektronik',priority:'Tinggi',quantity:2,budget:50000,notes:''};
-const created=createRequest(initial,draft);assert.equal(created.requests.length,13);assert.equal(created.requests[0].title,'Test request');assert.equal(created.requests[0].id,'QI-1049');assert.equal(created.events[0].request,'Test request');assert.equal(initial.requests.length,12);
-const started=transition(created,'QI-1049','Diproses');assert.equal(started.requests[0].status,'Diproses');const done=transition(started,'QI-1049','Selesai');assert.equal(done.requests[0].status,'Selesai');assert.throws(()=>transition(done,'QI-1049','Diproses'));assert.throws(()=>transition(initial,'bad','Diproses'));assert.throws(()=>transition(initial,'QI-1048','Selesai'));assert.equal(transition(initial,'QI-1048','Dibatalkan').requests[0].status,'Dibatalkan');
-assert.throws(()=>createRequest(initial,{...draft,title:' '}));assert.throws(()=>createRequest(initial,{...draft,quantity:0}));assert.throws(()=>createRequest(initial,{...draft,budget:-1}));assert.throws(()=>createRequest(initial,{...draft,priority:'Invalid'}));assert.deepEqual(parseData(JSON.stringify(done)),done);assert.throws(()=>parseData('{"requests":[]}'));assert.throws(()=>parseData(JSON.stringify({...initial,requests:[...initial.requests,initial.requests[0]]})));
-console.log('PASS: creation, validation, IDs, priority/FIFO queue, transitions, cancellation, persistence round-trip and corrupt-data rejection.');

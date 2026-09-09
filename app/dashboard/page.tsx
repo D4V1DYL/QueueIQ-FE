@@ -1,27 +1,752 @@
 ﻿'use client';
-import {useEffect,useRef,useState} from 'react';
-import {Plus,ArrowUpRight,ArrowRight,Search,Layers,Clock3,CheckCheck,ShoppingCart,Activity,Download,ChevronLeft,ChevronRight} from 'lucide-react';
-import {Tabs,TabsList,TabsTrigger} from '@/components/ui/tabs';
-import {Dialog,DialogContent,DialogTitle,DialogDescription} from '@/components/ui/dialog';
-import {AlertDialog,AlertDialogContent,AlertDialogTitle,AlertDialogDescription,AlertDialogCancel} from '@/components/ui/alert-dialog';
-import {Select,SelectTrigger,SelectValue,SelectContent,SelectItem} from '@/components/ui/select';
-import {Table,TableHeader,TableBody,TableRow,TableCell,TableHead} from '@/components/ui/table';
-import {KEY,seed,parseData,createRequest,transition,nextRequest,categories,type QueueData,type Status} from '@/lib/queue';
-const blank={title:'',owner:'',category:'Operasional',priority:'Normal',quantity:1,budget:0,notes:''};
-const money=(n:number)=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n);
-const date=(s:string)=>new Date(s).toLocaleString('id-ID',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-function Choice({value,onChange,items,label}:{value:string;onChange:(v:string)=>void;items:string[];label:string}){return <Select value={value} onValueChange={v=>v&&onChange(v)}><SelectTrigger aria-label={label}><SelectValue/></SelectTrigger><SelectContent>{items.map(i=><SelectItem key={i} value={i}>{i}</SelectItem>)}</SelectContent></Select>}
-export default function Home(){
- const [data,setData]=useState<QueueData>({requests:[],events:[]});const ref=useRef(data);const [ready,setReady]=useState(false);const [error,setError]=useState('');const [notice,setNotice]=useState('');const [tab,setTab]=useState('Semua request');const [query,setQuery]=useState('');const [priority,setPriority]=useState('Semua prioritas');const [page,setPage]=useState(1);const [createOpen,setCreateOpen]=useState(false);const [selected,setSelected]=useState<string|null>(null);const [cancelId,setCancelId]=useState<string|null>(null);const [draft,setDraft]=useState(blank);const [formError,setFormError]=useState('');
- useEffect(()=>{try{const raw=localStorage.getItem(KEY);const initial=raw?parseData(raw):seed();if(!raw)localStorage.setItem(KEY,JSON.stringify(initial));ref.current=initial;setData(initial);setReady(true)}catch{setError('Penyimpanan lokal tidak tersedia atau datanya tidak valid. Aktifkan penyimpanan browser sebelum melanjutkan.')}const sync=(e:StorageEvent)=>{if(e.key===KEY&&e.newValue){try{const d=parseData(e.newValue);ref.current=d;setData(d)}catch{setError('Data dari tab lain tidak valid.')}}};window.addEventListener('storage',sync);return()=>window.removeEventListener('storage',sync)},[]);
- useEffect(()=>{setPage(1)},[tab,query,priority]);useEffect(()=>{if(notice){const id=setTimeout(()=>setNotice(''),4000);return()=>clearTimeout(id)}},[notice]);
- function commit(next:QueueData){localStorage.setItem(KEY,JSON.stringify(next));ref.current=next;setData(next)}
- function change(id:string,status:Status){try{commit(transition(ref.current,id,status));setNotice(`Status diperbarui: ${status}.`);setCancelId(null)}catch(e){setError((e as Error).message)}}
- useEffect(()=>{const context=(document as any).modelContext;if(!context?.registerTool)return;const life=new AbortController();for(const tool of [{name:'list_queue_requests',description:'Read requests in the local QueueIQ demo.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true,untrustedContentHint:true},execute:()=>({requests:ref.current.requests})},{name:'start_request_creation',description:'Open the new request form. Does not submit a request.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:false},execute:()=>{setCreateOpen(true);return {form:'open'}}}]){try{Promise.resolve(context.registerTool(tool,{signal:life.signal})).catch(()=>{})}catch{}}return()=>life.abort()},[]);
- const filtered=data.requests.filter(r=>(tab==='Semua request'||r.status===tab)&&(priority==='Semua prioritas'||r.priority===priority)&&`${r.id} ${r.title} ${r.owner} ${r.category}`.toLowerCase().includes(query.toLowerCase()));const pages=Math.max(1,Math.ceil(filtered.length/5));const current=Math.min(page,pages);const shown=filtered.slice((current-1)*5,current*5);const next=nextRequest(data);const detail=data.requests.find(r=>r.id===selected);const waiting=data.requests.filter(r=>r.status==='Menunggu').length;
- function exportCsv(){const cell=(v:unknown)=>'"'+String(v).replace(/^[=+@-]/,"'$&").replaceAll('"','""')+'"';const rows=[['ID','Request','Pemohon','Kategori','Status','Prioritas','Jumlah','Anggaran','Catatan'],...filtered.map(r=>[r.id,r.title,r.owner,r.category,r.status,r.priority,r.quantity,r.budget,r.notes])];const url=URL.createObjectURL(new Blob(['\uFEFF'+rows.map(r=>r.map(cell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='queueiq-requests.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setNotice('Daftar request berhasil diekspor.')}
- return <div className="shell"><header className="topbar"><a className="brand" href="/"><img src="/queueiq-logo.jpg" alt="Logo QueueIQ"/><strong>Queue<span>IQ</span></strong></a><div className="workspace">Workspace <span>/</span> Queue management</div><span className="demo"><i/>Demo lokal</span><div className="avatar" title="Demo QueueIQ">DQ</div></header><main><div className="heading"><div><div className="eyebrow">WORKSPACE / OVERVIEW</div><h1>Semua request. Satu kendali<span>.</span></h1><p>Pantau antrean, atur prioritas, dan jaga pesanan tetap bergerak.</p></div><button className="primary" disabled={!ready} onClick={()=>{setDraft(blank);setFormError('');setCreateOpen(true)}}><Plus size={18}/> Request baru</button></div>{error&&<div className="error" role="alert">{error}<button onClick={()=>setError('')} aria-label="Tutup pesan">×</button></div>}<div className="stats">{[{Icon:Layers,label:'Total request',n:data.requests.length,desc:'Seluruh request dalam workspace'},{Icon:Clock3,label:'Dalam antrean',n:waiting,desc:'Siap untuk diproses'},{Icon:Activity,label:'Sedang diproses',n:data.requests.filter(r=>r.status==='Diproses').length,desc:'Pesanan dalam pengerjaan'},{Icon:CheckCheck,label:'Selesai',n:data.requests.filter(r=>r.status==='Selesai').length,desc:'Request berhasil dituntaskan'}].map(({Icon,label,n,desc},i)=><section className="stat" key={label}><div><span>{label}</span><Icon size={18}/></div><strong>{ready?String(n).padStart(2,'0'):'—'}<span className="mini-trend">{i===3?'✓':'↗'}</span></strong><small>{desc}</small></section>)}</div><div className="body-grid"><section className="panel requests"><div className="panel-heading"><div><h2>Antrean request <span className="count">{data.requests.length}</span></h2><p>Ruang kerja yang rapi. Proses yang lebih pasti.</p></div><button className="icon-button" onClick={exportCsv} disabled={!ready||!filtered.length} aria-label="Ekspor request yang ditampilkan ke CSV" title="Ekspor CSV"><Download size={18}/></button></div><Tabs value={tab} onValueChange={v=>setTab(String(v))}><TabsList variant="line" className="filter-tabs">{['Semua request','Menunggu','Diproses','Selesai','Dibatalkan'].map(t=><TabsTrigger key={t} value={t}>{t}</TabsTrigger>)}</TabsList></Tabs><div className="tools"><div className="search"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Cari nama, ID, atau pemohon..." aria-label="Cari request"/></div><Choice value={priority} onChange={setPriority} items={['Semua prioritas','Tinggi','Normal']} label="Filter prioritas"/></div><Table><TableHeader><TableRow><TableHead>REQUEST</TableHead><TableHead>PEMOHON</TableHead><TableHead>STATUS</TableHead><TableHead>PRIORITAS</TableHead><TableHead><span className="sr-only">Detail</span></TableHead></TableRow></TableHeader><TableBody>{shown.map(r=><TableRow key={r.id}><TableCell><small>{r.id} · {r.category}</small><button className="request-title" onClick={()=>setSelected(r.id)}>{r.title}</button></TableCell><TableCell><div className="person"><span>{r.owner.split(' ').slice(0,2).map(x=>x[0]).join('')}</span>{r.owner}</div></TableCell><TableCell><span className={'status '+r.status}>● {r.status}</span></TableCell><TableCell><span className={r.priority==='Tinggi'?'priority high':'priority'}>▥ {r.priority}</span></TableCell><TableCell><button className="icon-button" aria-label={`Detail ${r.id}`} onClick={()=>setSelected(r.id)}><ArrowUpRight size={17}/></button></TableCell></TableRow>)}</TableBody></Table>{!shown.length&&<div className="empty"><Layers size={28}/><h2>{ready?'Tidak ada request':'Memuat workspace...'}</h2><p>{ready?'Buat request baru atau sesuaikan pencarian dan filter.':'Menyiapkan antrean lokal Anda.'}</p></div>}<div className="table-footer"><span>{filtered.length?`${(current-1)*5+1}–${Math.min(current*5,filtered.length)}`:'0'} dari {filtered.length} request</span><div className="pager"><button aria-label="Halaman sebelumnya" disabled={current===1} onClick={()=>setPage(current-1)}><ChevronLeft size={15}/></button><span>{current} / {pages}</span><button aria-label="Halaman berikutnya" disabled={current===pages} onClick={()=>setPage(current+1)}><ChevronRight size={15}/></button></div></div></section><aside><section className="focus panel"><div className="eyebrow"><i/> BERIKUTNYA DALAM ANTREAN</div><div className="queue-number">{next?'01':'00'}<span>/ {String(waiting).padStart(2,'0')}</span></div><h2>{next?.title||'Antrean sudah bersih'}</h2><p>{next?`${next.owner} · ${next.category}`:'Semua request telah ditangani.'}</p><div className="focus-meta">{next&&<><span className="status Menunggu">● Menunggu</span><span className={'priority '+(next.priority==='Tinggi'?'high':'')}>▥ {next.priority}</span></>}</div><button className="primary" disabled={!next} onClick={()=>next&&change(next.id,'Diproses')}>Proses request <ArrowRight size={17}/></button><small>Prioritas tinggi lebih dahulu, lalu request terlama.</small></section><section className="panel activity"><h2><Activity size={17}/> Aktivitas terbaru</h2>{data.events.slice(0,3).map(a=><div className="activity-item" key={a.id}><i/><div><strong>{a.title}</strong><p>{a.request}</p><small>{date(a.at)}</small></div></div>)}{!data.events.length&&<p>Belum ada aktivitas.</p>}</section></aside></div><footer><span><ShoppingCart size={15}/> QUEUEIQ <b>/</b> KEEP THINGS MOVING.</span><span><i/> Mode demo · Data hanya di browser ini</span></footer></main>
- <Dialog open={createOpen} onOpenChange={setCreateOpen}><DialogContent className="request-dialog"><DialogTitle>Request baru</DialogTitle><DialogDescription>Tambahkan kebutuhan belanja ke antrean. Request ini disimpan sebagai simulasi lokal.</DialogDescription><form onSubmit={e=>{e.preventDefault();try{commit(createRequest(ref.current,draft));setCreateOpen(false);setTab('Semua request');setQuery('');setPriority('Semua prioritas');setPage(1);setNotice('Request berhasil dibuat dan masuk antrean.')}catch(e){setFormError((e as Error).message)}}}><label>Nama request<input autoFocus required maxLength={100} value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})} placeholder="Contoh: Restock kebutuhan pantry"/></label><label>Nama pemohon<input required maxLength={60} value={draft.owner} onChange={e=>setDraft({...draft,owner:e.target.value})} placeholder="Nama lengkap"/></label><div className="form-grid"><label>Kategori<Choice value={draft.category} onChange={v=>setDraft({...draft,category:v})} items={categories} label="Kategori request"/></label><label>Prioritas<Choice value={draft.priority} onChange={v=>setDraft({...draft,priority:v})} items={['Normal','Tinggi']} label="Prioritas request"/></label><label>Jumlah<input type="number" min={1} max={999} required value={draft.quantity||''} onChange={e=>setDraft({...draft,quantity:Number(e.target.value)})}/></label><label>Anggaran total (Rp)<input type="number" min={0} max={1000000000} required value={draft.budget} onChange={e=>setDraft({...draft,budget:Number(e.target.value)})}/></label></div><label>Catatan <span>(opsional)</span><textarea maxLength={1000} rows={3} value={draft.notes} onChange={e=>setDraft({...draft,notes:e.target.value})} placeholder="Spesifikasi, merek, atau kebutuhan khusus"/></label>{formError&&<p className="error" role="alert">{formError}</p>}<div className="actions"><button type="button" onClick={()=>setCreateOpen(false)}>Tutup</button><button type="submit" className="primary" disabled={!ready}><Plus size={16}/> Buat request</button></div></form></DialogContent></Dialog>
- <Dialog open={!!detail} onOpenChange={open=>!open&&setSelected(null)}><DialogContent className="request-dialog"><DialogTitle>{detail?.title}</DialogTitle><DialogDescription>{detail?.id} · Detail request</DialogDescription>{detail&&<><span className={'status '+detail.status}>● {detail.status}</span><dl className="details"><div><dt>Pemohon</dt><dd>{detail.owner}</dd></div><div><dt>Kategori</dt><dd>{detail.category}</dd></div><div><dt>Prioritas</dt><dd>{detail.priority}</dd></div><div><dt>Jumlah</dt><dd>{detail.quantity} unit</dd></div><div><dt>Anggaran total</dt><dd>{money(detail.budget)}</dd></div><div><dt>Dibuat</dt><dd>{date(detail.createdAt)}</dd></div></dl><p className="notes">{detail.notes||'Tidak ada catatan tambahan.'}</p><div className="actions">{['Menunggu','Diproses'].includes(detail.status)&&<button onClick={()=>setCancelId(detail.id)}>Batalkan request</button>}{detail.status==='Menunggu'&&<button className="primary" onClick={()=>change(detail.id,'Diproses')}>Mulai proses <ArrowRight size={16}/></button>}{detail.status==='Diproses'&&<button className="primary" onClick={()=>change(detail.id,'Selesai')}><CheckCheck size={16}/> Tandai selesai</button>}</div></>}</DialogContent></Dialog>
- <AlertDialog open={!!cancelId} onOpenChange={o=>!o&&setCancelId(null)}><AlertDialogContent><AlertDialogTitle>Batalkan request ini?</AlertDialogTitle><AlertDialogDescription>Request akan keluar dari antrean aktif. Riwayatnya tetap tersimpan.</AlertDialogDescription><div className="actions"><AlertDialogCancel>Kembali</AlertDialogCancel><button onClick={()=>cancelId&&change(cancelId,'Dibatalkan')}>Ya, batalkan</button></div></AlertDialogContent></AlertDialog>{notice&&<div className="notice" role="status"><CheckCheck size={17}/>{notice}</div>}</div>
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import {
+  Plus,
+  ArrowUpRight,
+  ArrowRight,
+  Layers,
+  Clock3,
+  CheckCheck,
+  ShoppingCart,
+  Activity,
+  Download,
+  Play,
+  Pause,
+  SkipForward,
+  RotateCcw,
+  Camera,
+  ScanLine,
+  Users,
+  Package,
+  Leaf,
+  Box,
+  Info,
+} from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableCell,
+  TableHead,
+} from '@/components/ui/table';
+import {
+  STORAGE_KEY,
+  seed,
+  readState,
+  addShopper,
+  setOpen,
+  tick,
+  bestLane,
+  signal,
+  wait,
+  count,
+  seconds,
+  type CheckoutState,
+} from '@/lib/checkout';
+const duration = (n: number) =>
+  `${Math.floor(n / 60)}:${String(Math.ceil(n % 60)).padStart(2, '0')}`;
+export default function Dashboard() {
+  const [state, setState] = useState<CheckoutState>(seed);
+  const ref = useRef(state);
+  const [ready, setReady] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [selected, setSelected] = useState(2);
+  const [modal, setModal] = useState(false);
+  const [reset, setReset] = useState(false);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [laneId, setLaneId] = useState(2);
+  const [items, setItems] = useState({ packaged: 6, produce: 2, bulky: 0 });
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const initial = raw ? readState(raw) : seed();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
+      ref.current = initial;
+      setState(initial);
+      setReady(true);
+    } catch {
+      setError(
+        'Saved simulation could not be loaded. Reset the demo to start a new local session.',
+      );
+    }
+  }, []);
+  function commit(s: CheckoutState) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    ref.current = s;
+    setState(s);
+  }
+  function perform(action: () => CheckoutState, message?: string) {
+    try {
+      commit(action());
+      setError('');
+      if (message) setNotice(message);
+      return true;
+    } catch (e) {
+      setRunning(false);
+      setError((e as Error).message);
+      return false;
+    }
+  }
+  useEffect(() => {
+    if (!running || !ready) return;
+    const id = setInterval(() => perform(() => tick(ref.current)), 3000);
+    return () => clearInterval(id);
+  }, [running, ready]);
+  useEffect(() => {
+    if (!notice) return;
+    const id = setTimeout(() => setNotice(''), 4000);
+    return () => clearTimeout(id);
+  }, [notice]);
+  useEffect(() => {
+    const context = (document as any).modelContext;
+    if (!context?.registerTool) return;
+    const lifecycle = new AbortController();
+    const tool = {
+      name: 'get_checkout_recommendation',
+      description:
+        'Read simulated checkout lanes and the fastest open lane. Does not change the simulation.',
+      inputSchema: {
+        type: 'object',
+        properties: {},
+        additionalProperties: false,
+      },
+      annotations: { readOnlyHint: true, untrustedContentHint: false },
+      execute: (input: unknown) => {
+        if (!input || typeof input !== 'object' || Object.keys(input).length)
+          throw Error('Expected an empty object.');
+        const s = ref.current;
+        return {
+          simulated: true,
+          fastestLane: bestLane(s)?.id ?? null,
+          lanes: s.lanes.map((l) => ({
+            id: l.id,
+            open: l.open,
+            waitSeconds: wait(l),
+            shoppers: l.baskets.length,
+            signal: signal(l),
+          })),
+        };
+      },
+    };
+    try {
+      Promise.resolve(
+        context.registerTool(tool, { signal: lifecycle.signal }),
+      ).catch(() => {});
+    } catch {}
+    return () => lifecycle.abort();
+  }, []);
+  const fastest = bestLane(state);
+  const active = state.lanes.filter((l) => l.open);
+  const customers = state.lanes.reduce((a, l) => a + l.baskets.length, 0);
+  const totalItems = state.lanes.reduce(
+    (a, l) => a + l.baskets.reduce((n, b) => n + count(b), 0),
+    0,
+  );
+  const lane = state.lanes.find((l) => l.id === selected)!;
+  const front = lane.baskets[0];
+  const maxWait = Math.max(1, ...state.lanes.map(wait));
+  function openShopper() {
+    setItems({ packaged: 6, produce: 2, bulky: 0 });
+    setLaneId(fastest?.id ?? 1);
+    setModal(true);
+  }
+  function exportData() {
+    const data = {
+      ...ref.current,
+      simulation: true,
+      exportedAt: new Date().toISOString(),
+      predictions: ref.current.lanes.map((l) => ({
+        lane: l.id,
+        waitSeconds: wait(l),
+        signal: signal(l),
+      })),
+    };
+    const url = URL.createObjectURL(
+      new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
+    );
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'queueiq-checkout-snapshot.json';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setNotice('Simulation snapshot exported.');
+  }
+  return (
+    <div className="shell checkout">
+      <header className="topbar">
+        <Link className="brand" href="/">
+          <img src="/queueiq-logo.jpg" alt="QueueIQ logo" />
+          <strong>
+            Queue<span>IQ</span>
+          </strong>
+        </Link>
+        <div className="workspace">
+          Store operations <span>/</span> Checkout intelligence
+        </div>
+        <span className="demo">
+          <i />
+          Simulation mode
+        </span>
+        <Link className="back-link" href="/">
+          About QueueIQ <ArrowUpRight size={14} />
+        </Link>
+      </header>
+      <main>
+        <div className="heading">
+          <div>
+            <div className="eyebrow">CONTROL ROOM / CHECKOUT OVERVIEW</div>
+            <h1>
+              A clearer view of every queue<span>.</span>
+            </h1>
+            <p>Basket-aware wait estimates. Smarter lane decisions.</p>
+          </div>
+          <button
+            className="primary"
+            disabled={!ready || !active.length}
+            onClick={openShopper}
+          >
+            <Plus size={18} /> Add shopper
+          </button>
+        </div>
+        <div className="sim-toolbar">
+          <div>
+            <span className={'live-dot ' + (running ? 'pulsing' : '')} />
+            <strong>
+              {running ? 'Simulation running' : 'Simulation paused'}
+            </strong>
+            <span>T+{duration(state.elapsed)} elapsed</span>
+          </div>
+          <div>
+            <button disabled={!ready} onClick={() => setRunning(!running)}>
+              {running ? <Pause size={15} /> : <Play size={15} />}{' '}
+              {running ? 'Pause' : 'Run simulation'}
+            </button>
+            <button
+              disabled={!ready}
+              onClick={() => perform(() => tick(ref.current))}
+              title="Advance all checkouts by 15 simulated seconds"
+            >
+              <SkipForward size={15} /> +15 sec
+            </button>
+            <button
+              onClick={() => setReset(true)}
+              aria-label="Reset simulation"
+            >
+              <RotateCcw size={15} />
+            </button>
+            <button
+              disabled={!ready}
+              onClick={exportData}
+              aria-label="Export simulation snapshot"
+            >
+              <Download size={15} />
+            </button>
+          </div>
+        </div>
+        {error && (
+          <div role="alert" className="error">
+            {error}
+          </div>
+        )}
+        <div className="stats">
+          {[
+            {
+              Icon: Users,
+              label: 'Shoppers in queue',
+              n: String(customers).padStart(2, '0'),
+              desc: 'Across all checkout lanes',
+            },
+            {
+              Icon: Package,
+              label: 'Detected items',
+              n: String(totalItems),
+              desc: 'Simulated basket contents',
+            },
+            {
+              Icon: Clock3,
+              label: 'Fastest estimated wait',
+              n: fastest ? duration(wait(fastest)) : '—',
+              desc: fastest
+                ? `${fastest.name} · minutes : seconds`
+                : 'No open lanes',
+            },
+            {
+              Icon: CheckCheck,
+              label: 'Checkouts completed',
+              n: String(state.completed).padStart(2, '0'),
+              desc: 'During this simulation',
+            },
+          ].map(({ Icon, label, n, desc }) => (
+            <section className="stat" key={label}>
+              <div>
+                <span>{label}</span>
+                <Icon size={18} />
+              </div>
+              <strong>{ready ? n : '—'}</strong>
+              <small>{desc}</small>
+            </section>
+          ))}
+        </div>
+        <div className="checkout-grid">
+          <section>
+            <div className="lane-heading">
+              <h2>Live lane overview</h2>
+              <span>
+                <i className="green" /> Fast <i className="amber" /> Moderate{' '}
+                <i className="red" /> Busy
+              </span>
+            </div>
+            <div className="lanes">
+              {state.lanes.map((l) => (
+                <article
+                  key={l.id}
+                  className={`lane-card ${signal(l)} ${l.id === selected ? 'selected' : ''}`}
+                >
+                  <div className="lane-title">
+                    <button
+                      className="lane-select"
+                      onClick={() => setSelected(l.id)}
+                      aria-pressed={selected === l.id}
+                    >
+                      {l.name} <ArrowUpRight size={14} />
+                    </button>
+                    <div
+                      className={'lane-light ' + signal(l)}
+                      aria-label={`${signal(l)} signal`}
+                    />
+                  </div>
+                  <div className="lane-time">
+                    {l.open ? duration(wait(l)) : '—'}
+                    <span>{l.open ? 'estimated wait' : 'lane closed'}</span>
+                  </div>
+                  <div className="lane-people">
+                    <Users size={14} />
+                    {l.baskets.length} shoppers <span>·</span>
+                    {l.baskets.reduce((n, b) => n + count(b), 0)} items
+                  </div>
+                  <div
+                    className="queue-track"
+                    aria-label={`${l.baskets.length} baskets in ${l.name}`}
+                  >
+                    {l.baskets.slice(0, 6).map((b, i) => (
+                      <button
+                        key={b.id}
+                        title={`${b.id}: ${count(b)} items`}
+                        onClick={() => setSelected(l.id)}
+                        className={i === 0 ? 'front-basket' : ''}
+                      >
+                        <ShoppingCart size={17} />
+                        <span>{count(b)}</span>
+                      </button>
+                    ))}
+                    {!l.baskets.length && (
+                      <span className="vacant">
+                        {l.open
+                          ? 'Ready for the next shopper'
+                          : 'No active checkout'}
+                      </span>
+                    )}
+                    {l.baskets.length > 6 && (
+                      <span>+{l.baskets.length - 6}</span>
+                    )}
+                  </div>
+                  <div className="lane-foot">
+                    <span className={'signal-label ' + signal(l)}>
+                      {!l.open
+                        ? 'Offline'
+                        : fastest?.id === l.id
+                          ? 'Recommended'
+                          : signal(l) === 'green'
+                            ? 'Short wait'
+                            : signal(l) === 'amber'
+                              ? 'Moderate wait'
+                              : 'Long wait'}
+                    </span>
+                    <Switch
+                      aria-label={`Open ${l.name}`}
+                      checked={l.open}
+                      disabled={!ready || (l.open && l.baskets.length > 0)}
+                      onCheckedChange={(v) =>
+                        perform(() => setOpen(ref.current, l.id, v))
+                      }
+                    />
+                  </div>
+                </article>
+              ))}
+            </div>
+            <div className="panel vision-panel">
+              <div className="panel-heading">
+                <div>
+                  <h2>
+                    <Camera size={17} /> Overhead basket analysis
+                  </h2>
+                  <p>
+                    {lane.name} · Front shopper {front?.id ?? '—'}
+                  </p>
+                </div>
+                <span className="simulation-tag">SIMULATED FEED</span>
+              </div>
+              <div className="vision-grid">
+                <div
+                  className={'camera-viewport ' + (running ? 'scanning' : '')}
+                >
+                  <div className="camera-corner top-left" />
+                  <div className="camera-corner bottom-right" />
+                  <div className="camera-label">
+                    <ScanLine size={13} /> BASKET CONTENT MAP
+                  </div>
+                  {front ? (
+                    <div className="detection-grid">
+                      {[
+                        { type: 'PACKAGED', n: front.packaged, Icon: Package },
+                        { type: 'PRODUCE', n: front.produce, Icon: Leaf },
+                        { type: 'BULKY', n: front.bulky, Icon: Box },
+                      ]
+                        .filter((o) => o.n > 0)
+                        .map(({ type, n, Icon }) => (
+                          <div
+                            className={'detection ' + type.toLowerCase()}
+                            key={type}
+                          >
+                            <span>
+                              {type} × {n}
+                            </span>
+                            <Icon size={38} strokeWidth={1} />
+                            <small>SIMULATED DETECTION</small>
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <div className="camera-empty">
+                      <ScanLine size={38} />
+                      <p>No basket in view</p>
+                    </div>
+                  )}
+                  <div className="camera-bottom">
+                    SCHEMATIC VIEW · NO CAMERA CONNECTED
+                  </div>
+                  <div className="scan-beam" />
+                </div>
+                <div className="basket-breakdown">
+                  <div className="eyebrow">ITEM MIX → SERVICE TIME</div>
+                  <h3>
+                    {front ? count(front) : 0}
+                    <span>items detected</span>
+                  </h3>
+                  {[
+                    {
+                      name: 'Packaged goods',
+                      n: front?.packaged ?? 0,
+                      sec: 4,
+                      color: 'packaged',
+                    },
+                    {
+                      name: 'Loose produce',
+                      n: front?.produce ?? 0,
+                      sec: 8,
+                      color: 'produce',
+                    },
+                    {
+                      name: 'Bulky items',
+                      n: front?.bulky ?? 0,
+                      sec: 10,
+                      color: 'bulky',
+                    },
+                  ].map((o) => (
+                    <div className="mix-row" key={o.name}>
+                      <span>
+                        <i className={o.color} />
+                        {o.name}
+                      </span>
+                      <b>{o.n}</b>
+                      <small>{o.sec}s / item</small>
+                    </div>
+                  ))}
+                  <div className="service-total">
+                    <span>Current checkout remaining</span>
+                    <strong>{duration(front?.remaining ?? 0)}</strong>
+                  </div>
+                  <p>
+                    Includes 20s payment overhead, adjusted by cashier speed.
+                    Estimates are deterministic demo calculations.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="panel queue-details">
+              <div className="panel-heading">
+                <h2>{lane.name} · Basket queue</h2>
+                <span className="count">{lane.baskets.length} shoppers</span>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>BASKET</TableHead>
+                    <TableHead>ITEM MIX</TableHead>
+                    <TableHead>ITEMS</TableHead>
+                    <TableHead>REMAINING</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {lane.baskets.map((b, i) => (
+                    <TableRow key={b.id}>
+                      <TableCell>
+                        {b.id}
+                        <small className="queue-position">
+                          {i === 0 ? 'At checkout' : `Position ${i + 1}`}
+                        </small>
+                      </TableCell>
+                      <TableCell>
+                        {b.packaged} packaged / {b.produce} produce / {b.bulky}{' '}
+                        bulky
+                      </TableCell>
+                      <TableCell>{count(b)}</TableCell>
+                      <TableCell>{duration(b.remaining)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {!lane.baskets.length && (
+                <div className="empty">
+                  <ShoppingCart />
+                  <p>No shoppers in this lane.</p>
+                </div>
+              )}
+            </div>
+          </section>
+          <aside>
+            <section className="focus panel recommendation">
+              <div className="eyebrow">
+                <i /> FASTEST LANE RIGHT NOW
+              </div>
+              <div className="recommended-number">
+                {fastest ? String(fastest.id).padStart(2, '0') : '—'}
+                <ArrowUpRight size={38} />
+              </div>
+              <h2>
+                {fastest ? `Head to ${fastest.name}` : 'All lanes are closed'}
+              </h2>
+              <p>
+                {fastest
+                  ? `${duration(wait(fastest))} estimated wait · ${fastest.baskets.length} shoppers`
+                  : 'Open an empty lane to accept shoppers.'}
+              </p>
+              <div className="recommendation-note">
+                <Info size={16} />
+                <span>
+                  {fastest
+                    ? 'Recommendation uses basket workload and cashier speed—not just the number of people.'
+                    : 'No lane recommendation is available.'}
+                </span>
+              </div>
+              <button
+                className="primary"
+                disabled={!ready || !fastest}
+                onClick={openShopper}
+              >
+                Try this recommendation <ArrowRight size={16} />
+              </button>
+            </section>
+            <section className="panel comparison">
+              <h2>Wait time by lane</h2>
+              <p>Predicted time until your turn</p>
+              {state.lanes.map((l) => (
+                <div className="wait-row" key={l.id}>
+                  <div>
+                    <span>{l.name}</span>
+                    <strong>{l.open ? duration(wait(l)) : 'Closed'}</strong>
+                  </div>
+                  <div className="wait-bar">
+                    <span
+                      className={signal(l)}
+                      style={{
+                        width: l.open
+                          ? `${Math.max(2, (wait(l) / maxWait) * 100)}%`
+                          : '0%',
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </section>
+            <section className="panel activity">
+              <h2>
+                <Activity size={17} /> Simulation activity
+              </h2>
+              {state.events.slice(0, 4).map((e) => (
+                <div className="activity-item" key={e.id}>
+                  <i />
+                  <div>
+                    <strong>{e.text}</strong>
+                    <small>T+{duration(e.time)}</small>
+                  </div>
+                </div>
+              ))}
+            </section>
+          </aside>
+        </div>
+        <div className="signal-explainer">
+          <Info size={16} />
+          <p>
+            <strong>Signal thresholds:</strong> green ≤ 2 min · amber ≤ 4 min ·
+            red &gt; 4 min. Empty lanes can be opened or closed. Simulation
+            advances 15 seconds every 3 seconds while running.
+          </p>
+        </div>
+        <footer>
+          <span>
+            <ShoppingCart size={15} /> QUEUEIQ <b>/</b> EVERY BASKET TELLS A
+            STORY.
+          </span>
+          <span>
+            <i /> Simulated detections · Saved to this browser
+          </span>
+        </footer>
+      </main>
+      <Dialog open={modal} onOpenChange={setModal}>
+        <DialogContent className="request-dialog">
+          <DialogTitle>Add a simulated shopper</DialogTitle>
+          <DialogDescription>
+            Change basket contents to see how estimated wait times and lane
+            signals respond.
+          </DialogDescription>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (
+                perform(
+                  () => addShopper(ref.current, laneId, items),
+                  'Shopper added. Lane estimates updated.',
+                )
+              ) {
+                setSelected(laneId);
+                setModal(false);
+              }
+            }}
+          >
+            <div className="form-grid">
+              {(['packaged', 'produce', 'bulky'] as const).map((k) => (
+                <label key={k}>
+                  {k === 'packaged'
+                    ? 'Packaged goods'
+                    : k === 'produce'
+                      ? 'Loose produce'
+                      : 'Bulky items'}
+                  <input
+                    type="number"
+                    required
+                    min={0}
+                    max={60}
+                    value={items[k]}
+                    onChange={(e) =>
+                      setItems({ ...items, [k]: Number(e.target.value) })
+                    }
+                  />
+                </label>
+              ))}
+            </div>
+            <label>
+              Checkout lane
+              <Select
+                value={String(laneId)}
+                onValueChange={(v) => v && setLaneId(Number(v))}
+              >
+                <SelectTrigger aria-label="Checkout lane">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {active.map((l) => (
+                    <SelectItem key={l.id} value={String(l.id)}>
+                      {l.name}
+                      {l.id === fastest?.id ? ' · Recommended' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
+            <p className="basket-estimate">
+              Basket service estimate:{' '}
+              <strong>
+                {duration(
+                  seconds(
+                    items,
+                    state.lanes.find((l) => l.id === laneId)?.speed ?? 1,
+                  ),
+                )}
+              </strong>{' '}
+              · before waiting in line
+            </p>
+            {error && (
+              <p role="alert" className="error">
+                {error}
+              </p>
+            )}
+            <div className="actions">
+              <button type="button" onClick={() => setModal(false)}>
+                Cancel
+              </button>
+              <button className="primary" type="submit">
+                Add to queue <ArrowRight size={16} />
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <AlertDialog open={reset} onOpenChange={setReset}>
+        <AlertDialogContent>
+          <AlertDialogTitle>Reset the simulation?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This replaces this browser’s simulated shoppers and activity with
+            the original demo. No real store data is affected.
+          </AlertDialogDescription>
+          <div className="actions">
+            <AlertDialogCancel>Keep simulation</AlertDialogCancel>
+            <button
+              className="primary"
+              onClick={() => {
+                if (perform(() => seed(), 'Demo reset.')) {
+                  setReady(true);
+                  setRunning(false);
+                  setSelected(2);
+                  setReset(false);
+                }
+              }}
+            >
+              Reset demo
+            </button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+      {notice && (
+        <div role="status" className="notice">
+          <CheckCheck size={17} />
+          {notice}
+        </div>
+      )}
+    </div>
+  );
 }
