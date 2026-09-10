@@ -96,7 +96,7 @@ export default function Landing() {
               <Check size={14} /> Interactive checkout simulation
             </span>
             <span>
-              <Check size={14} /> No camera required
+              <Check size={14} /> Live AI mode: YOLOv8 + online learning
             </span>
           </div>
         </div>
@@ -371,12 +371,19 @@ export default function Landing() {
           <br />
           See wait estimates and lane signals respond in real time.
         </p>
-        <Link href="/dashboard" className="primary cta">
-          Enter the control room <ArrowUpRight size={20} />
-        </Link>
+        <div className="hero-actions demo-actions">
+          <Link href="/dashboard" className="primary cta">
+            Enter the simulation <ArrowUpRight size={20} />
+          </Link>
+          <Link href="/live" className="secondary-cta">
+            Open the live AI control room <ArrowRight size={17} />
+          </Link>
+        </div>
         <small>
-          Frontend simulation · Camera, computer-vision model, and physical
-          lights are not connected yet.
+          Simulation runs in the browser alone. Live mode connects to the
+          QueueIQ vision server on your local network: drop in your own photo of
+          a checkout line with carts or baskets and watch YOLOv8 count the
+          shoppers, rate every basket, and predict the wait.
         </small>
         <div className="big-word" aria-hidden="true">
           QueueIQ
