@@ -38,3 +38,6 @@ next-env.d.ts
 /work/
 `n*.tsbuildinfo
 *.tsbuildinfo
+
+# unused scaffold backup (superseded prototype files)
+/_unused_scaffold_backup/
