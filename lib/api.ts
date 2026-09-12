@@ -138,18 +138,50 @@ export type CompleteResponse = {
 };
 
 export const API_STORAGE_KEY = 'queueiq-api-base';
-export const DEFAULT_API_BASE = 'http://127.0.0.1:8000';
+export const API_PORT = 8000;
+export const DEFAULT_API_BASE = `http://127.0.0.1:${API_PORT}`;
 
-/** Resolve the API base: explicit override → localStorage → env → default. */
+/**
+ * Where the vision server lives when nothing was configured: the same host
+ * that served this page, on the API port. Opening the dashboard from a phone
+ * at http://192.168.1.3:4173 therefore talks to http://192.168.1.3:8000 with
+ * no setup — the page and the API are served from the same machine.
+ */
+export function defaultApiBase(origin?: {
+  protocol: string;
+  hostname: string;
+}): string {
+  const loc =
+    origin ?? (typeof window !== 'undefined' ? window.location : undefined);
+  if (
+    loc &&
+    (loc.protocol === 'http:' || loc.protocol === 'https:') &&
+    loc.hostname
+  )
+    return `${loc.protocol}//${loc.hostname}:${API_PORT}`;
+  return DEFAULT_API_BASE;
+}
+
+/**
+ * Resolve the API base: ?api= in the URL → saved override → same host as the
+ * page. The query parameter is remembered, so a demo link such as
+ * /live?api=192.168.1.50:8000 only has to be opened once.
+ */
 export function getApiBase(): string {
-  if (typeof window !== 'undefined') {
-    try {
-      const saved = window.localStorage.getItem(API_STORAGE_KEY);
-      if (saved) return normalizeBase(saved);
-    } catch {}
-  }
-  const env = (process.env.NEXT_PUBLIC_QUEUEIQ_API as string | undefined) ?? '';
-  return normalizeBase(env || DEFAULT_API_BASE);
+  if (typeof window === 'undefined') return DEFAULT_API_BASE;
+  try {
+    const fromUrl = new URLSearchParams(window.location.search).get('api');
+    if (fromUrl) {
+      const base = normalizeBase(fromUrl);
+      setApiBase(base);
+      return base;
+    }
+  } catch {}
+  try {
+    const saved = window.localStorage.getItem(API_STORAGE_KEY);
+    if (saved) return normalizeBase(saved);
+  } catch {}
+  return defaultApiBase();
 }
 
 export function normalizeBase(url: string): string {

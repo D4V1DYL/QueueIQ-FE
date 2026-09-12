@@ -24,7 +24,16 @@ pip install -r requirements.txt -r requirements-server.txt
 python server.py            # http://127.0.0.1:8000
 ```
 
-The frontend defaults to `http://127.0.0.1:8000`. Override with `NEXT_PUBLIC_QUEUEIQ_API` (see `.env.example`) or from the offline panel on `/live`, which stores the URL in this browser. When you demo from a phone or a second laptop, run `python server.py --host 0.0.0.0` and point the page at the machine's LAN address; the server only accepts private-network clients.
+The dashboard needs no configuration: it calls the vision server on **the same host that served the page**, port 8000. Opening `http://localhost:4173/live` talks to `http://localhost:8000`, and opening `http://192.168.1.3:4173/live` from a phone talks to `http://192.168.1.3:8000`. To point somewhere else, append `?api=192.168.1.50:8000` once (it is remembered in that browser) or use the field in the "Vision server not reachable" panel.
+
+## Deploy
+
+```sh
+npm run build
+npx vinext start -p 4173        # serves on 0.0.0.0:4173
+```
+
+For a LAN demo also start the vision server with `python server.py --host 0.0.0.0` and open port 8000 and 4173 in the firewall. Full instructions, firewall commands, a demo-day checklist and a troubleshooting table are in [QueueIQ-AI/DEPLOY.md](https://github.com/D4V1DYL/QueueIQ-AI/blob/main/DEPLOY.md).
 
 ## What the control room does
 

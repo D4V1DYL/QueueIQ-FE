@@ -143,3 +143,27 @@ console.log(
   );
   console.log('PASS: client-side countdown derivation.');
 }
+
+// Default API base follows the host that served the page, so a LAN demo needs
+// no configuration; the loopback fallback is only for non-browser contexts.
+{
+  const { defaultApiBase, API_PORT } = await import('../lib/api.ts');
+  assert.equal(API_PORT, 8000);
+  assert.equal(
+    defaultApiBase({ protocol: 'http:', hostname: '192.168.1.3' }),
+    'http://192.168.1.3:8000',
+  );
+  assert.equal(
+    defaultApiBase({ protocol: 'http:', hostname: 'localhost' }),
+    'http://localhost:8000',
+  );
+  assert.equal(
+    defaultApiBase({ protocol: 'https:', hostname: 'queueiq.example' }),
+    'https://queueiq.example:8000',
+  );
+  assert.equal(
+    defaultApiBase({ protocol: 'file:', hostname: '' }),
+    'http://127.0.0.1:8000',
+  );
+  console.log('PASS: same-host API base resolution.');
+}
