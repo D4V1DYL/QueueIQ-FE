@@ -58,6 +58,7 @@ import {
   tierDescription,
   tierLabel,
   type Lane,
+  type VideoInfo,
 } from '@/lib/api';
 
 const AUTO_CAPTURE_MS = 4000;
@@ -107,6 +108,7 @@ export default function Live() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [examples, setExamples] = useState<string[]>([]);
+  const [videos, setVideos] = useState<VideoInfo[]>([]);
 
   const lanes = snapshot?.lanes ?? [];
   const lane = lanes.find((l) => l.id === selected) ?? lanes[0];
@@ -131,6 +133,7 @@ export default function Live() {
   useEffect(() => {
     if (!online) return;
     void run((c) => c.examples()).then((list) => setExamples(list ?? []));
+    void run((c) => c.videos()).then((list) => setVideos(list ?? []));
   }, [online, run]);
 
   // ---------- bring your own photo: drag & drop / paste ----------
@@ -233,7 +236,9 @@ export default function Live() {
       setNotice(
         out.learned
           ? `Model learned: predicted ${Math.round(out.learned.predicted_sec)}s, actual ${Math.round(out.actual_sec ?? 0)}s → now ${out.learned.intercept.toFixed(1)} + ${out.learned.slope.toFixed(2)} × items`
-          : `${l.name}: shopper checked out.`,
+          : out.skipped_reason
+            ? `${l.name}: shopper checked out — ${out.skipped_reason}. Use “Teach the model” with the real seconds.`
+            : `${l.name}: shopper checked out.`,
       );
     }
   }
@@ -653,9 +658,11 @@ export default function Live() {
                       ? auto
                         ? `AUTO-CAPTURE EVERY ${AUTO_CAPTURE_MS / 1000}s → ${lane?.name}`
                         : 'WEBCAM READY · CAPTURE TO ANALYZE'
-                      : health?.tier === 'mock'
-                        ? 'MOCK INFERENCE · SERVER WITHOUT PYTORCH'
-                        : 'YOLOV8 PERSON DETECTION · BASKET FULLNESS PER SHOPPER'}
+                      : lane?.video_source
+                        ? `VIRTUAL CAMERA · ${lane.video_source} · 1 FRAME / 2s`
+                        : health?.tier === 'mock'
+                          ? 'MOCK INFERENCE · SERVER WITHOUT PYTORCH'
+                          : 'YOLOV8 PERSON DETECTION · BASKET FULLNESS PER SHOPPER'}
                   </div>
                   <div className="scan-beam" />
                 </div>
@@ -719,6 +726,45 @@ export default function Live() {
                       <Upload size={14} /> Upload photo
                     </button>
                   </div>
+                  {videos.length > 0 && (
+                    <>
+                      <div className="eyebrow">
+                        <Play size={11} /> SAMPLE FOOTAGE · PLAY AS VIRTUAL
+                        CAMERA
+                      </div>
+                      <div className="video-list">
+                        {videos.map((v) => {
+                          const playing = lane?.video_source === v.name;
+                          return (
+                            <button
+                              key={v.name}
+                              className={playing ? 'playing' : ''}
+                              disabled={!online || !lane?.open}
+                              onClick={() =>
+                                void run((c) =>
+                                  playing
+                                    ? c.stopVideo(lane!.id)
+                                    : c.playVideo(lane!.id, v.name),
+                                )
+                              }
+                              title={`${v.name} · ${v.size_mb} MB`}
+                            >
+                              {playing ? (
+                                <Pause size={12} />
+                              ) : (
+                                <Play size={12} />
+                              )}
+                              <span>
+                                {v.name
+                                  .replace(/_[A-Za-z0-9_-]{11}\.[a-z0-9]+$/, '')
+                                  .replace(/_/g, ' ')}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
                   {examples.length > 0 && (
                     <>
                       <div className="eyebrow">

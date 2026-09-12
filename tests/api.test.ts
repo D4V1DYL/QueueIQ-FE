@@ -101,6 +101,7 @@ console.log(
     n_detected_total: null,
     inference_ms: null,
     completed: 0,
+    video_source: null,
   });
   const snap = {
     ts: 1000,

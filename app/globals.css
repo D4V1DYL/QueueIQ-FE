@@ -2953,3 +2953,27 @@ button.tiny {
     padding: 36px 16px 30px;
   }
 }
+
+/* sample footage played as a virtual camera */
+.video-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 16px;
+}
+.video-list button {
+  justify-content: flex-start;
+  font-size: 11px;
+  padding: 7px 10px;
+  text-align: left;
+}
+.video-list button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.video-list button.playing {
+  border-color: #c1d879;
+  color: #e4f77b;
+  background: #1f2a1f;
+}

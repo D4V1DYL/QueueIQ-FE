@@ -45,7 +45,11 @@ export type Lane = {
   n_detected_total: number | null;
   inference_ms: number | null;
   completed: number;
+  /** Name of the video file being played as a virtual camera, if any. */
+  video_source: string | null;
 };
+
+export type VideoInfo = { name: string; size_mb: number };
 
 export type Snapshot = {
   ts: number;
@@ -128,6 +132,8 @@ export type CompleteResponse = {
   actual_sec: number | null;
   measured_sec: number | null;
   learned: LearningRecord | null;
+  /** Set when the measured time was too short to be a real checkout. */
+  skipped_reason: string | null;
   lane: Lane;
 };
 
@@ -237,6 +243,17 @@ export function createClient(base: string) {
     lanes: () => request<Snapshot>(base, '/api/lanes', undefined, 6000),
     model: () => request<ModelSummary>(base, '/api/model'),
     examples: () => request<string[]>(base, '/api/examples'),
+    videos: () => request<VideoInfo[]>(base, '/api/videos'),
+    playVideo: (laneId: number, name: string, interval_sec = 2) =>
+      request<Lane>(base, `/api/lanes/${laneId}/video`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ name, interval_sec, loop: true }),
+      }),
+    stopVideo: (laneId: number) =>
+      request<Lane>(base, `/api/lanes/${laneId}/video/stop`, {
+        method: 'POST',
+      }),
     analyzeLane(laneId: number, source: File | Blob | { example: string }) {
       const fd = new FormData();
       if ('example' in source) fd.set('example', source.example);
