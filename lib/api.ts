@@ -20,7 +20,7 @@ export type Shopper = {
   est_items: number;
   est_sec: number;
   remaining_sec: number;
-  source: 'basket' | 'area-bawaan' | 'mock' | 'scenario';
+  source: 'basket' | 'carry-region' | 'mock' | 'scenario';
   person_box: number[] | null;
   crop_box: number[] | null;
   detail: Record<string, unknown>;
@@ -169,7 +169,7 @@ export function setApiBase(url: string) {
 export const absolute = (base: string, path: string | null) =>
   path ? (path.startsWith('http') ? path : `${base}${path}`) : null;
 
-/** mm:ss formatting shared with the simulation dashboard. */
+/** mm:ss formatting for wait times. */
 export const duration = (n: number) =>
   `${Math.floor(n / 60)}:${String(Math.ceil(n % 60)).padStart(2, '0')}`;
 

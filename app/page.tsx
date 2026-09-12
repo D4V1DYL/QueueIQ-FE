@@ -14,7 +14,6 @@ import {
   Camera,
   ScanLine,
   ChevronDown,
-  Users,
 } from 'lucide-react';
 const stages = [
   'See the basket',
@@ -62,7 +61,7 @@ export default function Landing() {
           <a href="#intelligence">The intelligence</a>
           <a href="#demo">Live demo</a>
         </div>
-        <Link className="nav-cta" href="/dashboard">
+        <Link className="nav-cta" href="/live">
           Launch demo <ArrowUpRight size={16} />
         </Link>
       </nav>
@@ -84,8 +83,8 @@ export default function Landing() {
             basket-aware wait estimates—and a clear signal for where to go.
           </p>
           <div className="hero-actions">
-            <Link href="/dashboard" className="primary cta">
-              Experience the demo <ArrowUpRight size={19} />
+            <Link href="/live" className="primary cta">
+              Open the live control room <ArrowUpRight size={19} />
             </Link>
             <a href="#how-it-works" className="secondary-cta">
               See how it works <ArrowRight size={17} />
@@ -93,10 +92,10 @@ export default function Landing() {
           </div>
           <div className="hero-proof">
             <span>
-              <Check size={14} /> Interactive checkout simulation
+              <Check size={14} /> Real YOLOv8 detection on your own photos
             </span>
             <span>
-              <Check size={14} /> Live AI mode: YOLOv8 + online learning
+              <Check size={14} /> Wait model that learns from every checkout
             </span>
           </div>
         </div>
@@ -105,7 +104,7 @@ export default function Landing() {
             <span>
               <i /> CHECKOUT VISION ENGINE
             </span>
-            <span>SIMULATED LIVE VIEW</span>
+            <span>LIVE VIEW</span>
           </div>
           <div className="orbital checkout-orbital">
             <div className="orbit orbit-one" />
@@ -290,7 +289,7 @@ export default function Landing() {
             <div className="mini-table">
               <div className="mini-tabs">
                 <span>Basket-aware prediction</span>
-                <span>Example simulation</span>
+                <span>Example from the live control room</span>
               </div>
               {[
                 ['Lane 01', '2 shoppers · 44 items', '4:46', 'red'],
@@ -347,11 +346,11 @@ export default function Landing() {
             <div>
               <h3>The basket is the signal.</h3>
               <p>
-                The demo uses simulated item counts. No camera access, facial
-                recognition, or shopper identity is needed to explore it.
+                Detections are boxes and basket-fullness classes only. No facial
+                recognition or shopper identity is used anywhere.
               </p>
             </div>
-            <Link href="/dashboard" aria-label="Explore the checkout dashboard">
+            <Link href="/live" aria-label="Open the live control room">
               <ArrowUpRight size={25} />
             </Link>
           </article>
@@ -367,23 +366,19 @@ export default function Landing() {
           <span>Watch the recommendation change.</span>
         </h2>
         <p>
-          Add a shopper. Change their basket. Advance checkout.
+          Drop in a photo of a checkout line. Play real CCTV footage.
           <br />
-          See wait estimates and lane signals respond in real time.
+          Watch the lanes, the signals, and the model update in real time.
         </p>
         <div className="hero-actions demo-actions">
-          <Link href="/dashboard" className="primary cta">
-            Enter the simulation <ArrowUpRight size={20} />
-          </Link>
-          <Link href="/live" className="secondary-cta">
-            Open the live AI control room <ArrowRight size={17} />
+          <Link href="/live" className="primary cta">
+            Enter the live control room <ArrowUpRight size={20} />
           </Link>
         </div>
         <small>
-          Simulation runs in the browser alone. Live mode connects to the
-          QueueIQ vision server on your local network: drop in your own photo of
-          a checkout line with carts or baskets and watch YOLOv8 count the
-          shoppers, rate every basket, and predict the wait.
+          The control room connects to the QueueIQ vision server on your local
+          network: YOLOv8 counts the shoppers, a trained classifier rates every
+          basket, and an online-learning model predicts the wait.
         </small>
         <div className="big-word" aria-hidden="true">
           QueueIQ

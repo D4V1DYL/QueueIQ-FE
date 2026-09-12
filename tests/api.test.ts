@@ -23,7 +23,7 @@ assert.equal(
 assert.equal(absolute('http://h:8000', 'http://x/y.jpg'), 'http://x/y.jpg');
 assert.equal(absolute('http://h:8000', null), null);
 
-// Formatting shared with the simulation dashboard.
+// Wait-time formatting.
 assert.equal(duration(0), '0:00');
 assert.equal(duration(133.2), '2:14');
 assert.equal(duration(412.8), '6:53');

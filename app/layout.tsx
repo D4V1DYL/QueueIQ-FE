@@ -9,7 +9,7 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: 'QueueIQ - AI-Powered Smart Checkout',
   description:
-    'Basket-aware checkout intelligence. Explore simulated overhead detections, predicted lane wait times, and real-time traffic-light guidance.',
+    'Basket-aware checkout intelligence: YOLOv8 overhead detection, basket-fullness classification, online-learning wait prediction, and real-time lane signals.',
   icons: { icon: '/queueiq-logo.jpg' },
 };
 export default function RootLayout({

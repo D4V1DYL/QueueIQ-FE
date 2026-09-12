@@ -270,12 +270,6 @@ export default function Live() {
         <div className="workspace">
           Store operations <span>/</span> Live vision
         </div>
-        <nav className="mode-switch" aria-label="Dashboard mode">
-          <Link href="/dashboard">Simulation</Link>
-          <Link href="/live" aria-current="page">
-            Live AI
-          </Link>
-        </nav>
         <span className={'demo conn ' + status}>
           {online ? <Wifi size={14} /> : <WifiOff size={14} />}
           {status === 'online'
@@ -383,9 +377,8 @@ export default function Live() {
                 <code>{base}</code>
               </h2>
               <p>
-                Start the Python API from the <code>QueueIQ-AI</code> folder,
-                then this page connects automatically. The simulation dashboard
-                keeps working without it.
+                Start the Python API from the <code>QueueIQ-AI</code> folder;
+                this page reconnects automatically as soon as it is up.
               </p>
               <pre>
                 pip install -r requirements-server.txt{'\n'}python server.py
@@ -407,9 +400,6 @@ export default function Live() {
                 />
               </label>
               <button type="submit">Reconnect</button>
-              <Link href="/dashboard" className="back-link">
-                Open simulation instead <ArrowRight size={13} />
-              </Link>
             </form>
           </section>
         )}
