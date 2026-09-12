@@ -157,9 +157,11 @@ console.log(
     defaultApiBase({ protocol: 'http:', hostname: 'localhost' }),
     'http://localhost:8000',
   );
+  // over HTTPS the API is expected behind a reverse proxy on the same origin,
+  // because a direct call to port 8000 would be blocked as mixed content
   assert.equal(
     defaultApiBase({ protocol: 'https:', hostname: 'queueiq.example' }),
-    'https://queueiq.example:8000',
+    'https://queueiq.example',
   );
   assert.equal(
     defaultApiBase({ protocol: 'file:', hostname: '' }),

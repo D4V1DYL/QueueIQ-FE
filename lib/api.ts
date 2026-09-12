@@ -142,10 +142,16 @@ export const API_PORT = 8000;
 export const DEFAULT_API_BASE = `http://127.0.0.1:${API_PORT}`;
 
 /**
- * Where the vision server lives when nothing was configured: the same host
- * that served this page, on the API port. Opening the dashboard from a phone
- * at http://192.168.1.3:4173 therefore talks to http://192.168.1.3:8000 with
- * no setup — the page and the API are served from the same machine.
+ * Where the vision server lives when nothing was configured.
+ *
+ * Over plain HTTP the dashboard and the API sit on the same machine on
+ * different ports, so http://192.168.1.3:4173 talks to
+ * http://192.168.1.3:8000 — a LAN demo needs no setup.
+ *
+ * Over HTTPS a direct call to port 8000 would be blocked as mixed content, so
+ * the only workable shape is a reverse proxy serving both from one origin. The
+ * default therefore drops the port and calls the page's own origin, which is
+ * what the Caddy configuration in DEPLOY.md sets up.
  */
 export function defaultApiBase(origin?: {
   protocol: string;
@@ -153,12 +159,9 @@ export function defaultApiBase(origin?: {
 }): string {
   const loc =
     origin ?? (typeof window !== 'undefined' ? window.location : undefined);
-  if (
-    loc &&
-    (loc.protocol === 'http:' || loc.protocol === 'https:') &&
-    loc.hostname
-  )
-    return `${loc.protocol}//${loc.hostname}:${API_PORT}`;
+  if (!loc || !loc.hostname) return DEFAULT_API_BASE;
+  if (loc.protocol === 'https:') return `https://${loc.hostname}`;
+  if (loc.protocol === 'http:') return `http://${loc.hostname}:${API_PORT}`;
   return DEFAULT_API_BASE;
 }
 
