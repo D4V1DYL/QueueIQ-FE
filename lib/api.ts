@@ -166,9 +166,28 @@ export function defaultApiBase(origin?: {
 }
 
 /**
- * Resolve the API base: ?api= in the URL → saved override → same host as the
- * page. The query parameter is remembered, so a demo link such as
- * /live?api=192.168.1.50:8000 only has to be opened once.
+ * API base baked in when the dashboard is built — typically the Hugging Face
+ * Space URL. Set VITE_QUEUEIQ_API (or NEXT_PUBLIC_QUEUEIQ_API) for `npm run
+ * build`; empty when neither is set.
+ */
+export function configuredApiBase(): string {
+  let value: string | undefined;
+  try {
+    value = import.meta.env.VITE_QUEUEIQ_API;
+  } catch {}
+  if (!value) {
+    try {
+      value = process.env.NEXT_PUBLIC_QUEUEIQ_API;
+    } catch {}
+  }
+  return value ? normalizeBase(value) : '';
+}
+
+/**
+ * Resolve the API base: ?api= in the URL → saved override → the build-time
+ * VITE_QUEUEIQ_API → same host as the page. The query parameter is
+ * remembered, so a demo link such as /live?api=192.168.1.50:8000 only has to
+ * be opened once.
  */
 export function getApiBase(): string {
   if (typeof window === 'undefined') return DEFAULT_API_BASE;
@@ -184,7 +203,7 @@ export function getApiBase(): string {
     const saved = window.localStorage.getItem(API_STORAGE_KEY);
     if (saved) return normalizeBase(saved);
   } catch {}
-  return defaultApiBase();
+  return configuredApiBase() || defaultApiBase();
 }
 
 export function normalizeBase(url: string): string {

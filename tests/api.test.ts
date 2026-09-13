@@ -169,3 +169,16 @@ console.log(
   );
   console.log('PASS: same-host API base resolution.');
 }
+
+// Build-time API base: empty unless VITE_QUEUEIQ_API / NEXT_PUBLIC_QUEUEIQ_API is
+// set, normalised when it is (Node has no import.meta.env, so the process.env
+// path is exercised here; the Vite path is verified against the built bundle).
+{
+  const { configuredApiBase } = await import('../lib/api.ts');
+  delete process.env.NEXT_PUBLIC_QUEUEIQ_API;
+  assert.equal(configuredApiBase(), '');
+  process.env.NEXT_PUBLIC_QUEUEIQ_API = 'https://dmtech-queueiq-api.hf.space/';
+  assert.equal(configuredApiBase(), 'https://dmtech-queueiq-api.hf.space');
+  delete process.env.NEXT_PUBLIC_QUEUEIQ_API;
+  console.log('PASS: build-time API base.');
+}

@@ -1,5 +1,11 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import {
   createClient,
   getApiBase,
@@ -11,6 +17,8 @@ import {
 } from '@/lib/api';
 
 export type ConnectionStatus = 'connecting' | 'online' | 'offline';
+
+const noopSubscribe = () => () => {};
 
 export type QueueIQState = {
   base: string;
@@ -29,7 +37,17 @@ export type QueueIQState = {
  * automatically; `status` flips to `offline` while the server is unreachable.
  */
 export function useQueueIQ(baseOverride?: string) {
-  const [base, setBase] = useState(() => baseOverride ?? getApiBase());
+  // The API address depends on the browser (?api=, a saved override, the page
+  // host), so it is unknown while the page is server-rendered. The server
+  // snapshot is '' and the real address arrives on the first client render,
+  // which keeps the server HTML and hydration identical (React error #418).
+  const resolvedBase = useSyncExternalStore(
+    noopSubscribe,
+    getApiBase,
+    () => '',
+  );
+  const [override, setOverride] = useState<string | null>(baseOverride ?? null);
+  const base = override ?? resolvedBase;
   const [status, setStatus] = useState<ConnectionStatus>('connecting');
   const [health, setHealth] = useState<Health | null>(null);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
@@ -41,6 +59,7 @@ export function useQueueIQ(baseOverride?: string) {
   const clientRef = useRef<Client>(createClient(base));
 
   useEffect(() => {
+    if (!base) return; // still hydrating: the address is not known yet
     clientRef.current = createClient(base);
     let closed = false;
     const es = new EventSource(`${base}/api/events`);
@@ -107,7 +126,7 @@ export function useQueueIQ(baseOverride?: string) {
     } as QueueIQState,
     setBase: (b: string) => {
       setStatus('connecting');
-      setBase(b);
+      setOverride(b);
     },
     run,
     clearError: () => setLastError(''),

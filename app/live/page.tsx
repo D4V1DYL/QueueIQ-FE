@@ -98,7 +98,9 @@ export default function Live() {
   const [selected, setSelected] = useState(1);
   const [busy, setBusy] = useState('');
   const [notice, setNotice] = useState('');
-  const [baseInput, setBaseInput] = useState(base);
+  // empty until the user types: the resolved address is unknown while the page
+  // is server-rendered, and seeding the input from it would break hydration
+  const [baseInput, setBaseInput] = useState('');
   const [camOn, setCamOn] = useState(false);
   const [auto, setAuto] = useState(false);
   const [actualSec, setActualSec] = useState('');
@@ -251,8 +253,9 @@ export default function Live() {
   }
 
   function applyBase() {
-    setApiBase(baseInput);
-    setBase(baseInput.trim().replace(/\/+$/, ''));
+    const target = (baseInput.trim() || base).replace(/\/+$/, '');
+    setApiBase(target);
+    setBase(target);
   }
 
   const frameSrc = lane ? absolute(base, lane.frame_url) : null;
@@ -395,7 +398,7 @@ export default function Live() {
                 <input
                   value={baseInput}
                   onChange={(e) => setBaseInput(e.target.value)}
-                  placeholder="http://192.168.1.10:8000"
+                  placeholder={base || 'http://192.168.1.10:8000'}
                 />
               </label>
               <button type="submit">Reconnect</button>

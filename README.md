@@ -33,7 +33,13 @@ npm run build
 npx vinext start -p 4173        # serves on 0.0.0.0:4173
 ```
 
-For a LAN demo also start the vision server with `python server.py --host 0.0.0.0` and open port 8000 and 4173 in the firewall. Full instructions, firewall commands, a demo-day checklist and a troubleshooting table are in [QueueIQ-AI/DEPLOY.md](https://github.com/D4V1DYL/QueueIQ-AI/blob/main/DEPLOY.md).
+When the API is hosted elsewhere — a Hugging Face Space, for instance — bake its URL into the build:
+
+```sh
+VITE_QUEUEIQ_API=https://<owner>-<space>.hf.space npm run build
+```
+
+On Vercel or Railway set `VITE_QUEUEIQ_API` as a build-time environment variable. For a LAN demo instead, start the vision server with `python server.py --host 0.0.0.0` and open port 8000 and 4173 in the firewall. Full instructions, firewall commands, a demo-day checklist and a troubleshooting table are in [QueueIQ-AI/DEPLOY.md](https://github.com/D4V1DYL/QueueIQ-AI/blob/main/DEPLOY.md).
 
 ## What the control room does
 
