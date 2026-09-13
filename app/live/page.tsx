@@ -1,6 +1,5 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
 import {
   ArrowUpRight,
   ArrowRight,
@@ -261,12 +260,12 @@ export default function Live() {
   return (
     <div className="shell checkout live">
       <header className="topbar">
-        <Link className="brand" href="/">
+        <a className="brand" href="/">
           <img src="/queueiq-logo.jpg" alt="QueueIQ logo" />
           <strong>
             Queue<span>IQ</span>
           </strong>
-        </Link>
+        </a>
         <div className="workspace">
           Store operations <span>/</span> Live vision
         </div>
@@ -278,9 +277,9 @@ export default function Live() {
               ? 'Connecting…'
               : 'Vision server offline'}
         </span>
-        <Link className="back-link" href="/">
+        <a className="back-link" href="/">
           About QueueIQ <ArrowUpRight size={14} />
-        </Link>
+        </a>
       </header>
       <main>
         <div className="heading">

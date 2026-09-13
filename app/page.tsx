@@ -1,6 +1,5 @@
 ﻿'use client';
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import {
   ArrowUpRight,
   ArrowRight,
@@ -50,20 +49,20 @@ export default function Landing() {
   return (
     <div className="landing">
       <nav className="landing-nav">
-        <Link href="/" className="brand">
+        <a href="/" className="brand">
           <img src="/queueiq-logo.jpg" alt="QueueIQ logo" />
           <strong>
             Queue<span>IQ</span>
           </strong>
-        </Link>
+        </a>
         <div className="nav-links">
           <a href="#how-it-works">How it works</a>
           <a href="#intelligence">The intelligence</a>
           <a href="#demo">Live demo</a>
         </div>
-        <Link className="nav-cta" href="/live">
+        <a className="nav-cta" href="/live">
           Launch demo <ArrowUpRight size={16} />
-        </Link>
+        </a>
       </nav>
       <section className="hero">
         <div className="hero-copy">
@@ -83,9 +82,9 @@ export default function Landing() {
             basket-aware wait estimates—and a clear signal for where to go.
           </p>
           <div className="hero-actions">
-            <Link href="/live" className="primary cta">
+            <a href="/live" className="primary cta">
               Open the live control room <ArrowUpRight size={19} />
-            </Link>
+            </a>
             <a href="#how-it-works" className="secondary-cta">
               See how it works <ArrowRight size={17} />
             </a>
@@ -350,9 +349,9 @@ export default function Landing() {
                 recognition or shopper identity is used anywhere.
               </p>
             </div>
-            <Link href="/live" aria-label="Open the live control room">
+            <a href="/live" aria-label="Open the live control room">
               <ArrowUpRight size={25} />
-            </Link>
+            </a>
           </article>
         </div>
       </section>
@@ -371,9 +370,9 @@ export default function Landing() {
           Watch the lanes, the signals, and the model update in real time.
         </p>
         <div className="hero-actions demo-actions">
-          <Link href="/live" className="primary cta">
+          <a href="/live" className="primary cta">
             Enter the live control room <ArrowUpRight size={20} />
-          </Link>
+          </a>
         </div>
         <small>
           The control room connects to the QueueIQ vision server on your local
@@ -385,11 +384,11 @@ export default function Landing() {
         </div>
       </section>
       <footer className="landing-footer">
-        <Link href="/" className="brand">
+        <a href="/" className="brand">
           <strong>
             Queue<span>IQ</span>
           </strong>
-        </Link>
+        </a>
         <span>SMARTER BASKETS. BETTER QUEUES.</span>
         <a href="#how-it-works">
           Back to how it works <ArrowUpRight size={14} />
