@@ -404,6 +404,18 @@ export default function Live() {
           </section>
         )}
 
+        {online && health && health.tier !== 'full' && (
+          <div role="alert" className="error model-warning">
+            <strong>
+              {health.tier === 'mock'
+                ? 'AI models are not loaded — detections below are random placeholders.'
+                : 'Basket fullness classifier not loaded — fullness uses a rough heuristic.'}
+            </strong>{' '}
+            {health.load_error ??
+              'fullness_classifier.pt or class_names.txt is missing on the server.'}
+          </div>
+        )}
+
         {lastError && (
           <div role="alert" className="error">
             {lastError}{' '}
